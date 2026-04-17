@@ -1,0 +1,24 @@
+CSharp-Hermes-Integration/examples/ConsoleApp/bin/Debug/net8.0/Microsoft.Extensions.Configuration.CommandLine.dll
+
+
+# ===== 敏感配置（包含真实 IP/密码）=====
+.env
+
+# ===== 构建产物 =====
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+
+# ===== IDE =====
+.vs/
+.vscode/
+*.user
+*.suo
+ 
+
+# ===== 备份文件 =====
+*.bak
+*.bak-*
+ 

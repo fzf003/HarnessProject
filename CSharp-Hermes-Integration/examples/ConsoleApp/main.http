@@ -1,0 +1,116 @@
+
+@baseUrl = http://localhost:8642
+@apiKey = hermes-csharp-integration-key-20250416
+@deepseekKey = sk-6a2ef164a3cb4566847969d7609ed535
+
+@sessionId =chatcmpl-8eb309a403aa497eb68909c4d5d58
+
+###chatcmpl-78088abab37a476eabc27e33816aa
+
+
+#### 获取单个响应
+@id=resp_38fed42500124499968eed412974
+GET {{baseUrl}}/v1/responses/{{id}}
+Authorization: Bearer {{apiKey}}
+
+
+### 
+POST {{baseUrl}}/v1/responses
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "deepseek-chat",
+  "input": "你好，你现在运行的是什么模型?",
+  "instructions": "你是一个助手，请回答我的问题.",
+  "store": true
+}
+ 
+
+
+### 与 DeepSeek 通信示例
+POST https://api.deepseek.com/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{deepseekKey}}
+
+{
+    "model": "deepseek-chat",
+    "messages": [
+        {
+            "role": "system",
+            "content": "你是一个助手，请回答我的问题."
+        },
+        {
+            "role": "user",
+            "content": "你好，你现在运行的是什么模型?"
+        }
+    ],
+    "stream": false
+}
+
+
+### 健康检查
+GET {{baseUrl}}/health
+
+
+### 获取模型列表
+GET {{baseUrl}}/v1/models
+Authorization: Bearer {{apiKey}}
+
+
+
+
+
+### 聊天完成 - 非流式
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+    "model": "hermes-agent",
+    "messages": [
+        {
+            "role": "system",
+            "content": "你是一个有帮助的助手"
+        },
+        {
+            "role": "user",
+            "content": "请解释 C# 中的异步编程"
+        }
+    ],
+    "stream": false,
+    "temperature": 0.7
+}
+
+
+### 聊天完成 - 流式
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+    "model": "hermes-agent",
+    "messages": [
+        {
+            "role": "system",
+            "content": "你是一个专业的代码审查专家"
+        },
+        {
+            "role": "user",
+            "content": "帮我审查这段代码的性能问题"
+        }
+    ],
+    "stream": true,
+    "temperature": 0.5
+}
+
+
+
+
+
+
+
+
+
+
+ 
