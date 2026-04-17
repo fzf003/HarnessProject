@@ -85,6 +85,15 @@ namespace HermesAgent.Client.Models
         /// </summary>
         [JsonPropertyName("timestamp")]
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// 解构方法，用于模式匹配
+        /// </summary>
+        public void Deconstruct(out string sessionId, out string content)
+        {
+            sessionId = SessionId;
+            content = Content;
+        }
     }
 
     /// <summary>
@@ -205,5 +214,35 @@ namespace HermesAgent.Client.Models
         /// </summary>
         [JsonPropertyName("uptime")]
         public TimeSpan Uptime { get; set; }
+    }
+
+    /// <summary>
+    /// 命令执行结果
+    /// </summary>
+    public class CommandExecutionResult
+    {
+        /// <summary>
+        /// 命令输出
+        /// </summary>
+        [JsonPropertyName("output")]
+        public string? Output { get; set; }
+
+        /// <summary>
+        /// 退出代码
+        /// </summary>
+        [JsonPropertyName("exit_code")]
+        public int ExitCode { get; set; }
+
+        /// <summary>
+        /// 是否成功
+        /// </summary>
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// 错误信息
+        /// </summary>
+        [JsonPropertyName("error")]
+        public string? Error { get; set; }
     }
 }

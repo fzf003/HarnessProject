@@ -125,6 +125,54 @@ namespace HermesAgent.Examples.WebApi.Controllers
         }
 
         /// <summary>
+        /// 获取可用模型列表
+        /// </summary>
+        /// <returns>模型列表</returns>
+        /// <response code="200">成功返回模型列表</response>
+        /// <response code="503">Hermes Agent 服务不可用</response>
+        [HttpGet("models")]
+        [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<string>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status503ServiceUnavailable)]
+        public async Task<IActionResult> GetModels()
+        {
+            var requestId = HttpContext.TraceIdentifier;
+
+            try
+            {
+                _logger.LogInformation("GetModels requested - RequestId: {RequestId}", requestId);
+
+                // For demo purposes, return mock model data since Hermes Agent service may not be running
+                var mockModels = new List<string>
+                {
+                    "hermes-agent",
+                    "gpt-3.5-turbo",
+                    "gpt-4",
+                    "claude-3-sonnet",
+                    "llama-2-70b"
+                };
+
+                return Ok(ApiResponse<IReadOnlyList<string>>.SuccessResponse(
+                    mockModels.AsReadOnly(),
+                    "Models retrieved successfully",
+                    requestId));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Unexpected error retrieving models - RequestId: {RequestId}",
+                    requestId);
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    ApiResponse.ErrorResponse(
+                        StatusCodes.Status500InternalServerError,
+                        "An unexpected error occurred",
+                        requestId));
+            }
+        }
+
+        /// <summary>
         /// 流式聊天
         /// </summary>
         /// <param name="request">聊天请求</param>

@@ -21,4 +21,7 @@ obj/
 # ===== 备份文件 =====
 *.bak
 *.bak-*
- 
+ VSCODE_PUSH_GUIDE.md
+FINAL_PUSH_STEPS.md
+VSCODE_PUSH_GUIDE.md
+check_push_status.sh

@@ -58,17 +58,17 @@ namespace HermesAgent.Examples.WebApi.Middleware
 
             var response = exception switch
             {
-                ArgumentException => CreateErrorResponse(
-                    context,
-                    HttpStatusCode.BadRequest,
-                    "Invalid argument",
-                    exception,
-                    requestId),
-
                 ArgumentNullException => CreateErrorResponse(
                     context,
                     HttpStatusCode.BadRequest,
                     "Required parameter is missing",
+                    exception,
+                    requestId),
+
+                ArgumentException => CreateErrorResponse(
+                    context,
+                    HttpStatusCode.BadRequest,
+                    "Invalid argument",
                     exception,
                     requestId),
 

@@ -206,7 +206,7 @@ namespace HermesAgent.Examples.ConsoleApp
                 var models = await client.GetModelsAsync();
                 if (models.Any())
                 {
-                    PrintResult($"可用模型: {string.Join(", ", models.Select(m => m.Id))}");
+                    PrintResult($"可用模型: {string.Join(", ", models)}");
                 }
                 else
                 {

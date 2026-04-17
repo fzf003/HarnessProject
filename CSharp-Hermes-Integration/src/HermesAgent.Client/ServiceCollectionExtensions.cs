@@ -144,7 +144,7 @@ namespace HermesAgent.Client
         /// <summary>
         /// 超时时间（秒）
         /// </summary>
-        public int Timeout { get; set; }
+        public int Timeout { get; set; } = 30;
         
         /// <summary>
         /// 最大重试次数

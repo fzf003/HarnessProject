@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 
 using HermesAgent.Client.Models;
+using HermesAgent.Client.Exceptions;
 
 using static HermesAgent.Client.HermesWebhookClient;
 
@@ -112,7 +113,7 @@ namespace HermesAgent.Client
             }
             catch (HttpRequestException ex)
             {
-                throw new HermesNetworkException($"Webhook 请求失败: {ex.Message}", ex);
+                throw new HermesApiException(500, $"Webhook 请求失败: {ex.Message}", null);
             }
         }
 
@@ -149,7 +150,7 @@ namespace HermesAgent.Client
             }
             catch (HttpRequestException ex)
             {
-                throw new HermesNetworkException($"Webhook 请求失败: {ex.Message}", ex);
+                throw new HermesApiException(500, $"Webhook 请求失败: {ex.Message}", null);
             }
         }
         public bool ValidateSignature(string payload, string signature)
@@ -374,6 +375,23 @@ namespace HermesAgent.Client
             Success,
             Failure,
             Cancelled
+        }
+
+        #endregion
+
+        #region 辅助方法
+
+        /// <summary>
+        /// 计算 HMAC-SHA256 签名
+        /// </summary>
+        /// <param name="data">要签名的数据</param>
+        /// <param name="key">密钥</param>
+        /// <returns>十六进制格式的签名</returns>
+        private static string ComputeHmacSha256(string data, string key)
+        {
+            using var hmac = new System.Security.Cryptography.HMACSHA256(System.Text.Encoding.UTF8.GetBytes(key));
+            var hash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(data));
+            return Convert.ToHexString(hash).ToLowerInvariant();
         }
 
         #endregion

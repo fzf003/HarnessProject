@@ -1,6 +1,7 @@
 using FluentAssertions;
 using HermesAgent.Client;
 using HermesAgent.Client.Exceptions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -65,6 +66,7 @@ namespace HermesAgent.Client.Tests
         {
             // Arrange
             var services = new ServiceCollection();
+            services.AddLogging(); // 添加日志记录器服务
 
             // Act
             services.AddHermesAgentMonitoring();
@@ -79,6 +81,7 @@ namespace HermesAgent.Client.Tests
         {
             // Arrange
             var services = new ServiceCollection();
+            services.AddLogging(); // 添加日志记录器服务
 
             // Act
             services.AddHermesAgentLogging();
@@ -209,7 +212,7 @@ namespace HermesAgent.Client.Tests
             // Assert
             options.BaseUrl.Should().Be("http://localhost:8642");
             options.ApiKey.Should().BeNull();
-            options.Timeout.Should().Be(0);
+            options.Timeout.Should().Be(30);
             options.MaxRetries.Should().Be(3);
             options.DefaultModel.Should().Be("hermes-agent");
             options.Temperature.Should().Be(0.7);

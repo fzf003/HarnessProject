@@ -68,15 +68,6 @@ namespace HermesAgent.Examples.WebApi
             // 添加应用程序服务
             services.AddApplicationServices(configuration);
 
-            // 添加 Hermes Agent 客户端
-            services.AddHermesAgentClient(configuration.GetSection("HermesAgent"));
-
-            // 添加 Hermes Agent 监控
-            services.AddHermesAgentMonitoring();
-
-            // 添加 Hermes Agent 日志记录
-            services.AddHermesAgentLogging();
-
             // 添加 Swagger 文档
             AddSwaggerDocumentation(services);
 
@@ -138,9 +129,6 @@ namespace HermesAgent.Examples.WebApi
 
             // 启用CORS
             app.UseCors("AllowAll");
-
-            // 健康检查
-            app.MapHealthChecks("/health");
 
             // 配置路由
             app.ConfigureRouting();

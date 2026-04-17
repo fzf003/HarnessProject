@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using static HermesAgent.Client.HermesHttpClient;
 
 using HermesAgent.Client.Models;
+using HermesAgent.Client.Exceptions;
 
 namespace HermesAgent.Client
 {
@@ -84,24 +85,24 @@ namespace HermesAgent.Client
         }
 
         /// <summary>
-        /// 流式聊天（Server-Sent Events）
+        /// 创建新会话
         /// </summary>
-        /// <param name="message">用户消息</param>
+        /// <param name="message">初始消息</param>
         /// <param name="model">模型名称</param>
         /// <param name="sessionId">会话ID</param>
         /// <param name="systemPrompt">系统提示</param>
         /// <param name="temperature">温度参数</param>
         /// <param name="maxTokens">最大token数</param>
         /// <param name="cancellationToken">取消令牌</param>
-        /// <returns>流式响应块</returns>
-        public async IAsyncEnumerable<string> ChatStreamAsync(
+        /// <returns>会话ID和响应内容</returns>
+        public async Task<(string? SessionId, string Content)> CreateSessionAsync(
             string message,
             string model = "deepseek-chat",
             string? sessionId = null,
             string? systemPrompt = null,
             double? temperature = null,
             int? maxTokens = null,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default)
         {
             var messages = new List<ChatMessage>();
 
@@ -114,7 +115,7 @@ namespace HermesAgent.Client
 
             var request = new ChatCompletionRequest
             {
-                Model = "deepseek-chat", //"hermes-agent",
+                Model = model,
                 Messages = messages,
                 Stream = false,
                 Temperature = temperature,
@@ -145,6 +146,99 @@ namespace HermesAgent.Client
                 result?.Id,
                 result?.Choices?.FirstOrDefault()?.Message?.Content ?? string.Empty
             );
+        }
+
+        /// <summary>
+        /// 流式聊天（Server-Sent Events）
+        /// </summary>
+        /// <param name="message">用户消息</param>
+        /// <param name="model">模型名称</param>
+        /// <param name="sessionId">会话ID</param>
+        /// <param name="systemPrompt">系统提示</param>
+        /// <param name="temperature">温度参数</param>
+        /// <param name="maxTokens">最大token数</param>
+        /// <param name="cancellationToken">取消令牌</param>
+        /// <returns>流式响应块</returns>
+        public async IAsyncEnumerable<string> ChatStreamAsync(
+            string message,
+            string model = "deepseek-chat",
+            string? sessionId = null,
+            string? systemPrompt = null,
+            double? temperature = null,
+            int? maxTokens = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var messages = new List<ChatMessage>();
+
+            if (!string.IsNullOrEmpty(systemPrompt))
+            {
+                messages.Add(new ChatMessage { Role = "system", Content = systemPrompt });
+            }
+
+            messages.Add(new ChatMessage { Role = "user", Content = message });
+
+            var request = new ChatCompletionRequest
+            {
+                Model = model,
+                Messages = messages,
+                Stream = true,
+                Temperature = temperature,
+                MaxTokens = maxTokens
+            };
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                content.Headers.Add("X-Session-ID", sessionId);
+            }
+
+            using var requestMessage = new HttpRequestMessage(
+                HttpMethod.Post,
+                $"{_baseUrl}/v1/chat/completions"
+            )
+            {
+                Content = content
+            };
+
+            using var response = await _httpClient.SendAsync(
+                requestMessage,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken
+            );
+            response.EnsureSuccessStatusCode();
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream);
+
+            while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+            {
+                var line = await reader.ReadLineAsync();
+                if (string.IsNullOrEmpty(line) || !line.StartsWith("data: "))
+                    continue;
+
+                var data = line.Substring(6);
+                if (data == "[DONE]")
+                    yield break;
+
+                var contentChunk = string.Empty;
+                try
+                {
+                    var chunk = JsonSerializer.Deserialize<ChatCompletionChunk>(data, _jsonOptions);
+                    contentChunk = chunk?.Choices?.FirstOrDefault()?.Delta?.Content;
+                }
+                catch (JsonException)
+                {
+                    // 忽略JSON解析错误，继续处理下一个数据块
+                    continue;
+                }
+                
+                if (!string.IsNullOrEmpty(contentChunk))
+                {
+                    yield return contentChunk;
+                }
+            }
         }
 
         /// <summary>
@@ -212,7 +306,7 @@ namespace HermesAgent.Client
             var completion = JsonSerializer.Deserialize<ChatCompletionResponse>(responseJson, _jsonOptions);
 
             if (completion == null)
-                throw new HermesApiException("API响应解析失败");
+                throw new HermesApiException(500, "API响应解析失败", responseJson);
 
             var sessionIdFromResponse = response.Headers.TryGetValues("X-Session-ID", out var values)
                 ? values.FirstOrDefault()
@@ -256,20 +350,21 @@ namespace HermesAgent.Client
         /// <param name="model">模型名称</param>
         /// <param name="sessionId">会话ID</param>
         /// <param name="systemPrompt">系统提示</param>
+        /// <param name="cancellationToken">取消令牌</param>
         /// <returns>回复列表</returns>
         public async Task<List<string>> BatchChatAsync(
             IEnumerable<string> messages,
             string model = "deepseek-chat",
             string? sessionId = null,
-            string? systemPrompt = null
-        )
+            string? systemPrompt = null,
+            CancellationToken cancellationToken = default)
         {
             var results = new List<string>();
 
             foreach (var message in messages)
             {
-                var (session, content) = await ChatAsync(message, model, sessionId, systemPrompt);
-                results.Add(content);
+                var response = await ChatAsync(message, sessionId, systemPrompt, null, null, cancellationToken);
+                results.Add(response.Content);
             }
 
             return results;
@@ -333,6 +428,36 @@ namespace HermesAgent.Client
             if (string.IsNullOrWhiteSpace(command))
                 throw new ArgumentException("命令不能为空", nameof(command));
 
+            var request = new
+            {
+                command = command,
+                session_id = sessionId
+            };
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            using var requestMessage = new HttpRequestMessage(
+                HttpMethod.Post,
+                $"{_baseUrl}/v1/commands/execute"
+            )
+            {
+                Content = content
+            };
+
+            using var response = await _httpClient.SendAsync(
+                requestMessage,
+                cancellationToken
+            );
+            response.EnsureSuccessStatusCode();
+
+            var responseJson = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<CommandExecutionResult>(responseJson, _jsonOptions);
+
+            if (result == null)
+                throw new HermesApiException(500, "命令执行响应解析失败", responseJson);
+
+            return result.Output ?? string.Empty;
         }
         /// <summary>
         /// 获取可用模型列表
@@ -405,7 +530,6 @@ namespace HermesAgent.Client
             var response = await _httpClient.PostAsync(
                 $"{_baseUrl}/api/chat/completions",
                 content,
-                HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken);
 
             response.EnsureSuccessStatusCode();
@@ -423,17 +547,21 @@ namespace HermesAgent.Client
                     var data = line.Substring(6);
                     if (data == "[DONE]") break;
 
+                    string? contentChunk = null;
                     try
                     {
                         var chunk = JsonSerializer.Deserialize<ChatCompletionChunk>(data, _jsonOptions);
-                        if (chunk?.Choices?.FirstOrDefault()?.Delta?.Content is string contentChunk)
-                        {
-                            yield return contentChunk;
-                        }
+                        contentChunk = chunk?.Choices?.FirstOrDefault()?.Delta?.Content;
                     }
                     catch (JsonException)
                     {
                         // 忽略解析错误，继续读取下一行
+                        continue;
+                    }
+
+                    if (!string.IsNullOrEmpty(contentChunk))
+                    {
+                        yield return contentChunk;
                     }
                 }
             }
@@ -584,6 +712,9 @@ namespace HermesAgent.Client
         {
             [JsonPropertyName("id")]
             public string? Id { get; set; }
+
+            [JsonPropertyName("name")]
+            public string? Name { get; set; }
 
             [JsonPropertyName("object")]
             public string? Object { get; set; }
