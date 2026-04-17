@@ -1,3 +1,7 @@
+using HermesAgent.Client;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
 namespace HermesAgent.Examples.WebApi.Configuration
 {
     /// <summary>
@@ -46,7 +50,7 @@ namespace HermesAgent.Examples.WebApi.Configuration
                 app.UseSwaggerUI(options =>
                 {
                     options.SwaggerEndpoint("/swagger/v1/swagger.json", "Hermes Agent API v1");
-                    options.RoutePrefix = string.Empty;
+                    options.RoutePrefix = "swagger";
                 });
             }
 
