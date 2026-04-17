@@ -1,0 +1,147 @@
+# OpenSpec 项目配置文件
+# C# 集成 Hermes Agent 方案项目
+
+schema: spec-driven
+created: 2026-04-17
+project: CSharp-Hermes-Integration
+version: 1.0.0
+
+# 项目上下文
+context: |
+  ## 项目概述
+  这是一个完整的 C# 集成 Hermes Agent 的方案，提供多种集成方式：
+  1. HTTP API 集成（推荐）
+  2. Webhook 集成
+  3. 进程调用集成
+
+  ## 技术栈
+  - 主要语言：C# 12.0
+  - 目标框架：.NET 10.0 / .NET 8.0
+  - 构建工具：dotnet CLI
+  - 包管理：NuGet
+  - 测试框架：xUnit
+  - 文档：Markdown
+
+  ## 项目结构
+  ```
+  CSharp-Hermes-Integration/
+  ├── src/                    # 源代码
+  │   ├── HermesAgent.Client/           # 核心客户端库
+  │   ├── HermesAgent.Extensions/       # 扩展功能
+  │   └── HermesAgent.Examples/         # 示例代码
+  ├── tests/                  # 测试代码
+  ├── docs/                   # 文档
+  └── examples/               # 使用示例
+  ```
+
+  ## 核心组件
+  1. HermesHttpClient - HTTP API 客户端
+  2. HermesWebhookClient - Webhook 客户端
+  3. HermesProcessClient - 进程调用客户端
+  4. ServiceCollectionExtensions - DI 容器扩展
+
+  ## 开发规范
+  - 遵循 Microsoft C# 编码约定
+  - 使用 XML 文档注释
+  - 异步编程模式（async/await）
+  - 依赖注入设计模式
+  - 单元测试覆盖率 > 80%
+  - 使用 FluentValidation 进行输入验证
+  - 错误处理使用自定义异常
+
+  ## 集成方式对比
+  | 方式 | 优点 | 缺点 | 适用场景 |
+  |------|------|------|----------|
+  | HTTP API | 标准化、跨语言、支持流式 | 需要网络 | 生产环境、Web应用 |
+  | Webhook | 事件驱动、异步处理 | 单向通信 | 自动化工作流 |
+  | 进程调用 | 直接控制、无需网络 | 进程管理复杂 | 本地工具、CLI应用 |
+
+# 每个工件的规则
+rules:
+  proposal:
+    - 包含清晰的问题陈述
+    - 定义范围和非目标
+    - 列出技术需求
+    - 提供架构设计草图
+    - 包含风险评估
+
+  tasks:
+    - 每个任务应该是2-4小时的工作量
+    - 包含验收标准
+    - 引用相关文件或模块
+    - 优先处理依赖关系
+    - 考虑向后兼容性
+
+  code:
+    - 编写单元测试，覆盖率 > 80%
+    - 使用依赖注入
+    - 遵循仓储模式进行数据访问
+    - 实现适当的错误处理
+    - 添加 XML 文档注释
+    - 使用异步编程模式
+    - 遵循 SOLID 原则
+    - 代码审查前运行所有测试
+
+  docs:
+    - 中文文档优先
+    - 包含代码示例
+    - 更新 README.md
+    - 维护 CHANGELOG.md
+    - 提供 API 文档
+
+  test:
+    - 单元测试使用 xUnit
+    - 集成测试覆盖主要流程
+    - 模拟外部依赖
+    - 测试异常情况
+    - 性能测试关键路径
+
+# 质量门禁
+quality_gates:
+  code_quality:
+    - 无编译器警告
+    - 通过静态代码分析
+    - 通过代码审查
+    - 通过所有测试
+
+  security:
+    - 输入验证
+    - 错误信息不泄露敏感数据
+    - 安全的配置管理
+    - 依赖包安全检查
+
+  performance:
+    - HTTP API 响应时间 < 500ms
+    - 进程调用超时设置合理
+    - 内存使用监控
+    - 并发处理能力
+
+# 部署和发布
+deployment:
+  nuget_package:
+    - 版本号遵循语义化版本控制
+    - 包含 XML 文档
+    - 包含符号包
+    - 发布到 NuGet.org
+
+  documentation:
+    - 更新 GitHub Pages
+    - 发布 API 文档
+    - 更新示例代码
+
+# 维护指南
+maintenance:
+  dependencies:
+    - 定期更新依赖包
+    - 检查安全漏洞
+    - 测试向后兼容性
+
+  monitoring:
+    - 收集使用指标
+    - 监控错误率
+    - 性能基准测试
+
+  support:
+    - 提供示例代码
+    - 维护常见问题解答
+    - 及时响应问题

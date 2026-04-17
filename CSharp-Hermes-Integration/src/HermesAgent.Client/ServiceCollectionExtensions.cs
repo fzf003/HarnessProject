@@ -29,7 +29,7 @@ namespace HermesAgent.Client
                 {
                     var options = sp.GetRequiredService<IOptions<HermesAgentOptions>>().Value;
                     client.BaseAddress = new Uri(options.BaseUrl);
-                    client.Timeout = TimeSpan.FromSeconds(30);//options.Timeout;
+                    client.Timeout = TimeSpan.FromSeconds(options.Timeout > 0 ? options.Timeout : 30);
                     if (!string.IsNullOrEmpty(options.ApiKey))
                     {
                         client.DefaultRequestHeaders.Authorization =
@@ -73,7 +73,7 @@ namespace HermesAgent.Client
             {
                 var options = sp.GetRequiredService<IOptions<HermesAgentOptions>>().Value;
                 client.BaseAddress = new Uri(options.BaseUrl);
-                client.Timeout = TimeSpan.FromSeconds(30);//options.Timeout;
+                client.Timeout = TimeSpan.FromSeconds(options.Timeout > 0 ? options.Timeout : 30);
                 if (!string.IsNullOrEmpty(options.ApiKey))
                 {
                     client.DefaultRequestHeaders.Authorization = 
@@ -134,12 +134,12 @@ namespace HermesAgent.Client
         /// <summary>
         /// API 密钥
         /// </summary>
-        public string ApiKey { get; set; }
+        public string? ApiKey { get; set; }
         
         /// <summary>
         /// Webhook 密钥
         /// </summary>
-        public string WebhookSecret { get; set; }
+        public string? WebhookSecret { get; set; }
         
         /// <summary>
         /// 超时时间（秒）
@@ -207,7 +207,7 @@ namespace HermesAgent.Client
     /// </summary>
     public class HermesAgentOptionsValidator : IValidateOptions<HermesAgentOptions>
     {
-        public ValidateOptionsResult Validate(string name, HermesAgentOptions options)
+        public ValidateOptionsResult Validate(string? name, HermesAgentOptions options)
         {
             var errors = new List<string>();
             

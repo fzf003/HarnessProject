@@ -4,6 +4,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 
+using HermesAgent.Client.Models;
+
 using static HermesAgent.Client.HermesWebhookClient;
 
 namespace HermesAgent.Client
@@ -15,7 +17,7 @@ namespace HermesAgent.Client
     {
         private readonly HttpClient _httpClient;
         private readonly string _webhookUrl;
-        private readonly string _secret;
+        private readonly string? _secret;
         private readonly JsonSerializerOptions _jsonOptions;
 
         /// <summary>
@@ -28,7 +30,7 @@ namespace HermesAgent.Client
         public HermesWebhookClient(
             string baseUrl = "http://localhost:8644", 
             string route = "dotnet-webhook", 
-            string secret = null,
+            string? secret = null,
             TimeSpan? timeout = null)
         {
             _webhookUrl = $"{baseUrl.TrimEnd('/')}/webhooks/{route}";
@@ -79,7 +81,7 @@ namespace HermesAgent.Client
         public async Task<bool> SendEventAsync(
             string eventType, 
             object payload, 
-            Dictionary<string, string> headers = null)
+            Dictionary<string, string>? headers = null)
         {
             var payloadJson = JsonSerializer.Serialize(payload, _jsonOptions);
             var content = new StringContent(payloadJson, Encoding.UTF8, "application/json");
@@ -96,29 +98,86 @@ namespace HermesAgent.Client
                 }
             }
             
-            // 添加 HMAC 签名
+            // 如果配置了密钥，添加签名
             if (!string.IsNullOrEmpty(_secret))
             {
-                var signature = CalculateHmac(payloadJson, _secret);
-                content.Headers.Add("X-Hub-Signature-256", $"sha256={signature}");
+                var signature = ComputeHmacSha256(payloadJson, _secret);
+                content.Headers.Add("X-Signature", signature);
             }
             
-            var response = await _httpClient.PostAsync(_webhookUrl, content);
-            return response.IsSuccessStatusCode;
+            try
+            {
+                var response = await _httpClient.PostAsync(_webhookUrl, content);
+                return response.IsSuccessStatusCode;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new HermesNetworkException($"Webhook 请求失败: {ex.Message}", ex);
+            }
         }
 
         /// <summary>
-        /// 验证 HMAC 签名
+        /// 发送 Webhook 事件（接口实现）
         /// </summary>
-        /// <param name="payload">原始数据</param>
-        /// <param name="signature">签名</param>
-        /// <returns>是否验证通过</returns>
+        /// <param name="event">事件数据</param>
+        /// <param name="cancellationToken">取消令牌</param>
+        /// <returns>是否成功</returns>
+        public async Task<bool> SendEventAsync(WebhookEvent @event, CancellationToken cancellationToken = default)
+        {
+            var payloadJson = JsonSerializer.Serialize(@event.Data, _jsonOptions);
+            var content = new StringContent(payloadJson, Encoding.UTF8, "application/json");
+            
+            // 添加事件类型头
+            content.Headers.Add("X-Event-Type", @event.Event);
+            
+            // 如果事件包含签名，使用它
+            if (!string.IsNullOrEmpty(@event.Signature))
+            {
+                content.Headers.Add("X-Signature", @event.Signature);
+            }
+            // 否则，如果配置了密钥，计算签名
+            else if (!string.IsNullOrEmpty(_secret))
+            {
+                var signature = ComputeHmacSha256(payloadJson, _secret);
+                content.Headers.Add("X-Signature", signature);
+            }
+            
+            try
+            {
+                var response = await _httpClient.PostAsync(_webhookUrl, content, cancellationToken);
+                return response.IsSuccessStatusCode;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new HermesNetworkException($"Webhook 请求失败: {ex.Message}", ex);
+            }
+        }
         public bool ValidateSignature(string payload, string signature)
         {
             if (string.IsNullOrEmpty(_secret) || string.IsNullOrEmpty(signature))
                 return false;
             
             var expectedSignature = CalculateHmac(payload, _secret);
+            
+            // 移除可能的 "sha256=" 前缀
+            var cleanSignature = signature.Replace("sha256=", "", StringComparison.OrdinalIgnoreCase);
+            
+            return string.Equals(expectedSignature, cleanSignature, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 验证 Webhook 签名（接口实现）
+        /// </summary>
+        /// <param name="payload">载荷</param>
+        /// <param name="signature">签名</param>
+        /// <param name="secret">密钥</param>
+        /// <returns>是否验证通过</returns>
+        public bool VerifySignature(string payload, string signature, string secret)
+        {
+            if (string.IsNullOrEmpty(secret) || string.IsNullOrEmpty(signature))
+                return false;
+            
+            var expectedSignature = CalculateHmac(payload, secret);
             
             // 移除可能的 "sha256=" 前缀
             var cleanSignature = signature.Replace("sha256=", "", StringComparison.OrdinalIgnoreCase);
@@ -136,7 +195,7 @@ namespace HermesAgent.Client
         public async Task<bool> SendGitHubPushEventAsync(
             GitHubRepository repository,
             List<GitHubCommit> commits,
-            GitHubUser sender = null)
+            GitHubUser? sender = null)
         {
             var payload = new GitHubPushEvent
             {
@@ -164,7 +223,7 @@ namespace HermesAgent.Client
             string project,
             BuildStatus status,
             int duration,
-            string output = null)
+            string? output = null)
         {
             var payload = new DotNetBuildEvent
             {
@@ -202,22 +261,22 @@ namespace HermesAgent.Client
         public class GitHubPushEvent
         {
             [JsonPropertyName("ref")]
-            public string Ref { get; set; }
+            public string? Ref { get; set; }
             
             [JsonPropertyName("before")]
-            public string Before { get; set; }
+            public string? Before { get; set; }
             
             [JsonPropertyName("after")]
-            public string After { get; set; }
+            public string? After { get; set; }
             
             [JsonPropertyName("repository")]
-            public GitHubRepository Repository { get; set; }
+            public GitHubRepository? Repository { get; set; }
             
             [JsonPropertyName("pusher")]
-            public GitHubUser Pusher { get; set; }
+            public GitHubUser? Pusher { get; set; }
             
             [JsonPropertyName("sender")]
-            public GitHubUser Sender { get; set; }
+            public GitHubUser? Sender { get; set; }
             
             [JsonPropertyName("commits")]
             public List<GitHubCommit> Commits { get; set; } = new();
@@ -229,16 +288,16 @@ namespace HermesAgent.Client
             public long Id { get; set; }
             
             [JsonPropertyName("name")]
-            public string Name { get; set; }
+            public string? Name { get; set; }
             
             [JsonPropertyName("full_name")]
-            public string FullName { get; set; }
+            public string? FullName { get; set; }
             
             [JsonPropertyName("html_url")]
-            public string HtmlUrl { get; set; }
+            public string? HtmlUrl { get; set; }
             
             [JsonPropertyName("description")]
-            public string Description { get; set; }
+            public string? Description { get; set; }
         }
 
         public class GitHubUser
@@ -247,34 +306,34 @@ namespace HermesAgent.Client
             public long Id { get; set; }
             
             [JsonPropertyName("login")]
-            public string Login { get; set; }
+            public string? Login { get; set; }
             
             [JsonPropertyName("name")]
-            public string Name { get; set; }
+            public string? Name { get; set; }
             
             [JsonPropertyName("email")]
-            public string Email { get; set; }
+            public string? Email { get; set; }
             
             [JsonPropertyName("avatar_url")]
-            public string AvatarUrl { get; set; }
+            public string? AvatarUrl { get; set; }
         }
 
         public class GitHubCommit
         {
             [JsonPropertyName("id")]
-            public string Id { get; set; }
+            public string? Id { get; set; }
             
             [JsonPropertyName("message")]
-            public string Message { get; set; }
+            public string? Message { get; set; }
             
             [JsonPropertyName("timestamp")]
             public DateTime Timestamp { get; set; }
             
             [JsonPropertyName("author")]
-            public GitHubUser Author { get; set; }
+            public GitHubUser? Author { get; set; }
             
             [JsonPropertyName("committer")]
-            public GitHubUser Committer { get; set; }
+            public GitHubUser? Committer { get; set; }
             
             [JsonPropertyName("added")]
             public List<string> Added { get; set; } = new();
@@ -289,25 +348,25 @@ namespace HermesAgent.Client
         public class DotNetBuildEvent
         {
             [JsonPropertyName("project")]
-            public string Project { get; set; }
+            public string? Project { get; set; }
             
             [JsonPropertyName("status")]
-            public string Status { get; set; } // "success", "failure", "cancelled"
+            public string? Status { get; set; } // "success", "failure", "cancelled"
             
             [JsonPropertyName("duration")]
             public int Duration { get; set; } // 秒
             
             [JsonPropertyName("output")]
-            public string Output { get; set; }
+            public string? Output { get; set; }
             
             [JsonPropertyName("timestamp")]
             public DateTime Timestamp { get; set; }
             
             [JsonPropertyName("framework")]
-            public string Framework { get; set; } = "net8.0";
+            public string? Framework { get; set; } = "net8.0";
             
             [JsonPropertyName("configuration")]
-            public string Configuration { get; set; } = "Release";
+            public string? Configuration { get; set; } = "Release";
         }
 
         public enum BuildStatus
@@ -318,31 +377,5 @@ namespace HermesAgent.Client
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// Hermes Agent Webhook 客户端接口
-    /// </summary>
-    public interface IHermesWebhookClient : IDisposable
-    {
-        /// <summary>
-        /// 发送 Webhook 事件
-        /// </summary>
-        Task<bool> SendEventAsync(string eventType, object payload, Dictionary<string, string> headers = null);
-        
-        /// <summary>
-        /// 验证 HMAC 签名
-        /// </summary>
-        bool ValidateSignature(string payload, string signature);
-        
-        /// <summary>
-        /// 发送 GitHub 推送事件
-        /// </summary>
-        Task<bool> SendGitHubPushEventAsync(GitHubRepository repository, List<GitHubCommit> commits, GitHubUser sender = null);
-        
-        /// <summary>
-        /// 发送 .NET 构建事件
-        /// </summary>
-        Task<bool> SendDotNetBuildEventAsync(string project, BuildStatus status, int duration, string output = null);
     }
 }

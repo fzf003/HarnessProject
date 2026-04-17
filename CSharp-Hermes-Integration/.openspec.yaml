@@ -1,0 +1,126 @@
+# OpenSpec 子项目配置文件
+# CSharp-Hermes-Integration 项目
+
+schema: spec-driven
+created: 2026-04-17
+project: CSharp-Hermes-Integration
+subproject: true
+
+# 项目特定上下文
+context: |
+  ## 项目定位
+  C# 客户端库，用于集成 Hermes Agent AI 助手，支持多种集成模式。
+
+  ## 核心功能
+  1. HTTP API 客户端 - 与 Hermes Gateway 通信
+  2. Webhook 客户端 - 接收 Hermes 事件
+  3. 进程调用客户端 - 直接调用 Hermes CLI
+  4. DI 容器集成 - 简化 ASP.NET Core 集成
+
+  ## 技术细节
+  - 目标框架：net10.0（主），net8.0（兼容）
+  - 异步支持：完全异步 API
+  - 流式响应：支持 HTTP API 流式响应
+  - 会话管理：支持持久化会话
+  - 错误处理：自定义异常类型
+  - 配置：支持多种配置源
+
+  ## 文件结构
+  ```
+  src/HermesAgent.Client/
+  ├── HermesHttpClient.cs          # HTTP API 客户端
+  ├── HermesWebhookClient.cs       # Webhook 客户端
+  ├── ProcessClient/               # 进程调用客户端
+  │   └── HermesProcessClient.cs
+  ├── Models/                      # 数据模型
+  │   ├── ChatRequest.cs
+  │   ├── ChatResponse.cs
+  │   └── WebhookEvent.cs
+  ├── Exceptions/                  # 自定义异常
+  │   ├── HermesApiException.cs
+  │   └── HermesProcessException.cs
+  └── ServiceCollectionExtensions.cs # DI 扩展
+  ```
+
+  ## 开发约束
+  - 保持向后兼容性
+  - 支持 .NET Standard 2.1 以上版本
+  - 最小化外部依赖
+  - 提供完整的 XML 文档
+  - 支持依赖注入
+
+# 开发规则
+rules:
+  api_design:
+    - 使用异步方法（Async 后缀）
+    - 提供同步包装方法（可选）
+    - 使用强类型模型
+    - 支持配置选项模式
+    - 提供工厂方法
+
+  http_client:
+    - 使用 HttpClientFactory
+    - 实现重试机制
+    - 支持超时配置
+    - 处理 HTTP 状态码
+    - 支持自定义请求头
+
+  process_client:
+    - 管理进程生命周期
+    - 处理标准输出/错误
+    - 支持超时控制
+    - 清理资源（IDisposable）
+    - 会话状态管理
+
+  testing:
+    - 单元测试所有公共方法
+    - 集成测试实际 Hermes 交互
+    - 模拟外部依赖
+    - 测试错误场景
+    - 性能基准测试
+
+  documentation:
+    - 每个公共类型和方法都有 XML 注释
+    - 提供使用示例
+    - 包含配置示例
+    - 更新 CHANGELOG
+    - 维护迁移指南
+
+# 质量要求
+quality:
+  code_coverage:
+    - 单元测试覆盖率 > 85%
+    - 集成测试覆盖率 > 70%
+    - 关键路径 100% 覆盖
+
+  performance:
+    - HTTP 请求延迟 < 100ms（本地）
+    - 进程启动时间 < 3s
+    - 内存使用 < 100MB
+    - 支持并发请求
+
+  reliability:
+    - 自动重试失败请求
+    - 优雅降级
+    - 连接池管理
+    - 超时处理
+
+# 发布流程
+release:
+  versioning:
+    - 遵循语义化版本控制
+    - 主版本：不兼容的 API 更改
+    - 次版本：向后兼容的功能添加
+    - 修订版本：向后兼容的错误修复
+
+  packaging:
+    - 生成 NuGet 包
+    - 包含符号包
+    - 包含 XML 文档
+    - 多目标框架支持
+
+  deployment:
+    - 发布到 NuGet.org
+    - 更新示例项目
+    - 更新文档
+    - 发布公告

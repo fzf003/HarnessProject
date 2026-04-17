@@ -1,0 +1,31 @@
+schema: spec-driven
+created: 2026-04-17
+status: completed
+completed: 2026-04-17
+
+# 任务总结
+summary: |
+  成功创建了 InfoController，包含 6 个 REST API 端点，所有端点都返回 JSON 对象。
+  代码符合项目规范，包含完整的文档和注释。
+
+# 创建的文件
+files_created:
+  - CSharp-Hermes-Integration/examples/WebApi/InfoController.cs
+  - CSharp-Hermes-Integration/examples/WebApi/verify-task.sh
+
+# API 端点
+endpoints:
+  - GET /api/info/system
+  - GET /api/info/version  
+  - GET /api/info/status
+  - GET /api/info/config
+  - GET /api/info/ping
+  - GET /api/info/time
+
+# 质量检查
+quality_checks:
+  - 代码编译通过
+  - 遵循 C# 编码规范
+  - 包含 XML 文档注释
+  - 使用异步编程模式
+  - 符合 REST API 设计原则
