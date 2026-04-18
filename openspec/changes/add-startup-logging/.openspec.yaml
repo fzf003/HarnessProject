@@ -1,0 +1,69 @@
+schema: spec-driven
+created: 2026-04-18
+status: pending
+
+summary: |
+  为 CSharp-Hermes-Integration WebApi 项目增加程序启动时的详细日志输出，
+  包括环境信息、配置加载状态、服务注册情况、中间件配置等关键信息，
+  便于调试和监控应用程序启动过程。
+  
+  此变更将提升应用程序的可观测性，帮助开发人员和运维人员快速诊断启动问题。
+
+files_to_create:
+  - CSharp-Hermes-Integration/examples/WebApi/StartupLogger.cs
+
+files_to_modify:
+  - CSharp-Hermes-Integration/examples/WebApi/Program.cs
+
+implementation_plan:
+  - 创建 StartupLogger 工具类，提供结构化的启动日志输出
+  - 在 Program.cs 的 Main 方法中添加启动日志
+  - 记录环境变量和配置信息
+  - 记录服务注册状态
+  - 记录中间件配置
+  - 记录 URL 绑定信息
+  - 添加启动完成标志
+
+quality_checks:
+  - 代码编译通过（0 错误）
+  - 遵循 C# 编码规范
+  - 包含完整的 XML 文档注释
+  - 使用结构化日志格式
+  - 不泄露敏感信息（如 API Key）
+  - 日志级别合理（Information 级别）
+
+expected_output: |
+  程序启动时应输出类似以下格式的日志：
+  
+  ========================================
+  Hermes Agent WebApi Starting...
+  ========================================
+  Environment: Development
+  Application Name: HermesAgent.Examples.WebApi
+  Version: 1.0.0
+  ----------------------------------------
+  Configuration Loaded:
+    - HermesAgent BaseUrl: http://localhost:8642
+    - Swagger Enabled: True
+    - URLs: http://localhost:8080;https://localhost:8443
+  ----------------------------------------
+  Services Registered:
+    - Controllers: ✓
+    - Swagger: ✓
+    - Health Checks: ✓
+    - CORS: ✓
+  ----------------------------------------
+  Middleware Configured:
+    - Global Exception Handler: ✓
+    - Request Logging: ✓
+    - Swagger UI: ✓
+  ========================================
+  Application Started Successfully!
+  ========================================
+
+testing_instructions: |
+  1. 构建项目：dotnet build
+  2. 运行应用：dotnet run --environment Development
+  3. 观察控制台输出，确认启动日志完整显示
+  4. 验证日志中包含所有关键信息
+  5. 测试不同环境（Development/Production）的日志输出

@@ -1,0 +1,41 @@
+schema: spec-driven
+created: 2026-04-18
+status: completed
+completed: 2026-04-18
+verified: true
+verification_date: 2026-04-18
+
+summary: |
+  变更了 CSharp-Hermes-Integration 项目中 Swagger 的开启方式，从硬编码的环境判断改为基于配置文件的可配置方式。
+
+files_created:
+  - Configuration/SwaggerOptions.cs
+  - appsettings.Production.json
+
+files_modified:
+  - appsettings.json
+  - Configuration/ServiceRegistrationExtensions.cs
+
+quality_checks:
+  - 编译成功（0 错误）
+  - 配置文件结构清晰
+  - 向后兼容（原有行为不变）
+  - 支持灵活配置
+
+implementation_details: |
+  1. 添加了 Swagger 配置节到 appsettings.json
+  2. 创建了 SwaggerOptions 配置模型类
+  3. 更新了 ServiceRegistrationExtensions 中的 Swagger 配置逻辑
+  4. 支持开发环境强制启用和生产环境可配置启用
+
+testing_instructions: |
+  1. 开发环境：运行 `dotnet run --environment Development`，访问 http://localhost:8080/swagger
+  2. 生产环境：运行 `dotnet run --environment Production`，默认禁用，可通过配置启用
+  3. 修改 appsettings.json 中的 Swagger:Enabled 配置测试不同状态
+
+verification_results:
+  - config_files: passed
+  - code_changes: passed
+  - compilation: passed
+  - functionality: passed
+  - test_execution: passed

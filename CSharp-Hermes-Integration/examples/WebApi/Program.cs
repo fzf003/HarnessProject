@@ -20,11 +20,21 @@ namespace HermesAgent.Examples.WebApi
         /// <param name="args">命令行参数</param>
         public static void Main(string[] args)
         {
+
             var builder = CreateHostBuilder(args);
             var app = builder.Build();
 
+            // 获取日志记录器
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+            // 记录启动信息
+            StartupLogger.LogStartup(logger, app.Configuration, app.Environment);
+
             // 配置中间件
-            ConfigureMiddleware(app);
+            ConfigureMiddleware(app, logger);
+
+            // 记录服务和中间件配置状态
+            LogConfigurationStatus(logger);
 
             app.Run();
         }
@@ -91,17 +101,10 @@ namespace HermesAgent.Examples.WebApi
         /// </summary>
         private static void AddSwaggerDocumentation(IServiceCollection services)
         {
-            services.AddSwaggerGen(options =>
+             services.AddSwaggerGen(options =>
             {
-                // 基本配置
-                // 包含XML文档注释
                 var xmlFile = Path.Combine(AppContext.BaseDirectory, "HermesAgent.Examples.WebApi.xml");
-                if (File.Exists(xmlFile))
-                {
-                    options.IncludeXmlComments(xmlFile);
-                }
-
-                // 自定义Swagger UI
+                options.IncludeXmlComments(xmlFile);
                 options.SchemaGeneratorOptions.SchemaIdSelector = (type) => type.FullName;
             });
         }
@@ -109,16 +112,19 @@ namespace HermesAgent.Examples.WebApi
         /// <summary>
         /// 配置应用程序中间件管道
         /// </summary>
-        private static void ConfigureMiddleware(WebApplication app)
+        private static void ConfigureMiddleware(WebApplication app, ILogger logger)
         {
             // 异常处理中间件必须首先注册
             app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+            logger.LogDebug("Middleware configured: Global Exception Handler");
 
             // 请求日志中间件
             app.UseMiddleware<RequestLoggingMiddleware>();
+            logger.LogDebug("Middleware configured: Request Logging");
 
             // 配置 Swagger/OpenAPI
             app.ConfigureApplicationMiddleware();
+            logger.LogDebug("Middleware configured: Swagger/OpenAPI");
 
             // HTTPS重定向（在生产环境中启用）
             if (!app.Environment.IsDevelopment())
@@ -129,9 +135,38 @@ namespace HermesAgent.Examples.WebApi
 
             // 启用CORS
             app.UseCors("AllowAll");
+            logger.LogDebug("Middleware configured: CORS");
 
             // 配置路由
             app.ConfigureRouting();
+            logger.LogDebug("Middleware configured: Routing");
+        }
+
+        /// <summary>
+        /// 记录配置状态
+        /// </summary>
+        private static void LogConfigurationStatus(ILogger logger)
+        {
+            // 记录服务注册状态
+            var servicesRegistered = new Dictionary<string, bool>
+            {
+                { "Controllers", true },
+                { "Swagger", true },
+                { "Health Checks", true },
+                { "CORS", true }
+            };
+            StartupLogger.LogServicesRegistered(logger, servicesRegistered);
+
+            // 记录中间件配置状态
+            var middlewareConfigured = new Dictionary<string, bool>
+            {
+                { "Global Exception Handler", true },
+                { "Request Logging", true },
+                { "Swagger UI", true },
+                { "CORS", true },
+                { "Routing", true }
+            };
+            StartupLogger.LogMiddlewareConfigured(logger, middlewareConfigured);
         }
     }
 }

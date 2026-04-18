@@ -1,6 +1,8 @@
 using HermesAgent.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 namespace HermesAgent.Examples.WebApi.Configuration
 {
@@ -27,6 +29,18 @@ namespace HermesAgent.Examples.WebApi.Configuration
                 services.AddHttpClient<IHermesAgentClient, HermesHttpClient>();
             }
 
+            // 注册 Swagger 配置
+            var swaggerSection = configuration.GetSection("Swagger");
+            if (swaggerSection.Exists())
+            {
+                services.Configure<SwaggerOptions>(swaggerSection);
+            }
+            else
+            {
+                // 如果没有配置，使用默认值
+                services.Configure<SwaggerOptions>(options => { });
+            }
+
             // 注册控制器
             services.AddControllers();
 
@@ -43,18 +57,59 @@ namespace HermesAgent.Examples.WebApi.Configuration
         {
             ArgumentNullException.ThrowIfNull(app);
 
-            // 在开发环境中启用 Swagger
-            if (app.Environment.IsDevelopment())
+            // 获取 Swagger 配置
+            var swaggerOptions = app.Services.GetService<IOptions<SwaggerOptions>>()?.Value 
+                ?? new SwaggerOptions();
+
+            // 判断是否应该启用 Swagger
+            bool shouldEnableSwagger = ShouldEnableSwagger(app, swaggerOptions);
+
+            if (shouldEnableSwagger)
             {
                 app.UseSwagger();
                 app.UseSwaggerUI(options =>
                 {
-                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Hermes Agent API v1");
-                    options.RoutePrefix = "swagger";
+                    options.SwaggerEndpoint("/swagger/v1/swagger.json", swaggerOptions.DocumentTitle);
+                    options.RoutePrefix = swaggerOptions.RoutePrefix;
+                    
+                    // 配置 Swagger UI 选项
+                    if (!swaggerOptions.EnableTryItOut)
+                    {
+                        options.DefaultModelsExpandDepth(-1);
+                        options.DefaultModelExpandDepth(0);
+                        options.DisplayRequestDuration();
+                        options.DocExpansion(DocExpansion.None);
+                    }
+                    
+                    if (swaggerOptions.EnableDeepLinking)
+                    {
+                        options.EnableDeepLinking();
+                    }
                 });
             }
 
             return app;
+        }
+
+        /// <summary>
+        /// 判断是否应该启用 Swagger
+        /// </summary>
+        private static bool ShouldEnableSwagger(WebApplication app, SwaggerOptions options)
+        {
+            // 如果配置明确启用，则启用
+            if (options.Enabled)
+            {
+                return true;
+            }
+
+            // 如果配置禁用，但在开发环境中且强制启用，则启用
+            if (!options.Enabled && app.Environment.IsDevelopment() && options.ForceEnableInDevelopment)
+            {
+                return true;
+            }
+
+            // 其他情况不启用
+            return false;
         }
 
         /// <summary>
