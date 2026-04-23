@@ -70,12 +70,12 @@ await foreach (var chunk in client.ChatStreamAsync("Write a C# Hello World"))
 
 ## 详细文档
 
-- [HTTP API 集成](./docs/http-api-integration.md)
-- [Webhook 集成](./docs/webhook-integration.md)  
-- [进程调用集成](./docs/process-integration.md)
-- [ASP.NET Core 集成](./docs/aspnet-core-integration.md)
-- [配置说明](./docs/configuration.md)
-- [安全指南](./docs/security.md)
+- [HTTP API 集成](./CSharp-Hermes-Integration/docs/http-api-integration.md)
+- [Webhook 集成](./CSharp-Hermes-Integration/docs/webhook-integration.md)  
+- [进程调用集成](./CSharp-Hermes-Integration/docs/process-integration.md)
+- [ASP.NET Core 集成](./CSharp-Hermes-Integration/docs/aspnet-core-integration.md)
+- [配置说明](./CSharp-Hermes-Integration/docs/configuration.md)
+- [安全指南](./CSharp-Hermes-Integration/docs/security.md)
 
 ## 示例项目
 
