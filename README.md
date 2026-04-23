@@ -79,7 +79,7 @@ await foreach (var chunk in client.ChatStreamAsync("Write a C# Hello World"))
 
 ## 示例项目
 
-查看 [examples](./examples/) 目录获取完整示例：
+查看 [examples](./CSharp-Hermes-Integration/examples/) 目录获取完整示例：
 - Console 应用
 - ASP.NET Core Web API
 - Worker Service
